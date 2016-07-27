@@ -43,7 +43,7 @@ namespace Squirrel
                         var releaseNotes = x.GetReleaseNotes(PackageDirectory);
                         return EnumerableExtensions.Return(Tuple.Create(x, releaseNotes));
                     } catch (Exception ex) {
-                        this.Log().WarnException("Couldn't get release notes for:" + x.Filename, ex);
+                        this.Log().Info("Couldn't get release notes for:" + x.Filename, ex);
                         return EnumerableExtensions.Return(Tuple.Create(x, String.Empty));
                     }
                 })
@@ -64,7 +64,7 @@ namespace Squirrel
                 return new UpdateInfo(null, new[] { latestFull }, packageDirectory);
             }
 
-            if (currentVersion.Version == latestFull.Version) {
+            if (currentVersion.Version >= latestFull.Version) {
                 return new UpdateInfo(currentVersion, Enumerable.Empty<ReleaseEntry>(), packageDirectory);
             }
 
