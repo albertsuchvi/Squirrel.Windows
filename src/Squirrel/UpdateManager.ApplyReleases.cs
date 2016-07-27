@@ -186,7 +186,7 @@ namespace Squirrel
                         sl.Arguments += String.Format(" -a \"{0}\"", programArguments);
                     }
 
-                    sl.SetAppUserModelId(String.Format("com.squirrel.{0}.{1}", zf.Id, exeName.Replace(".exe", "")));
+                    sl.SetAppUserModelId(String.Format("com.squirrel.{0}.{1}", zf.Id.Replace(' ', ''), exeName.Replace(".exe", "").Replace(' ', '')));
                     ret.Add(f, sl);
                 }
 
@@ -242,7 +242,7 @@ namespace Squirrel
                             sl.Arguments += String.Format(" -a \"{0}\"", programArguments);
                         }
 
-                        sl.SetAppUserModelId(String.Format("com.squirrel.{0}.{1}", zf.Id, exeName.Replace(".exe", "")));
+                        sl.SetAppUserModelId(String.Format("com.squirrel.{0}.{1}", zf.Id.Replace(' ', ''), exeName.Replace(".exe", "").Replace(' ', '')));
 
                         this.Log().Info("About to save shortcut: {0} (target {1}, workingDir {2}, args {3})", file, sl.Target, sl.WorkingDirectory, sl.Arguments);
                         if (ModeDetector.InUnitTestRunner() == false) sl.Save(file);
@@ -293,78 +293,11 @@ namespace Squirrel
                     target.Create();
 
                     this.Log().Info("Writing files to app directory: {0}", target.FullName);
-                    ReleasePackage.ExtractZipDecoded(Path.Combine(updateInfo.PackageDirectory, release.Filename),
-                        target.FullName, @"lib");
 
-                    // Move all of the files out of the lib/ dirs in the NuGet package
-                    // into our target App directory.
-                    //
-                    // NB: We sort this list in order to guarantee that if a Net20
-                    // and a Net40 version of a DLL get shipped, we always end up
-                    // with the 4.0 version.
-                    var libDir = target.GetDirectories().First(x => x.Name.Equals("lib", StringComparison.OrdinalIgnoreCase));
-                    var toMove = libDir.GetDirectories().OrderBy(x => x.Name);
+                    await ReleasePackage.ExtractZipForInstall(
+                        Path.Combine(updateInfo.PackageDirectory, release.Filename),
+                        target.FullName);
 
-                    toMove.ForEach(ld => {
-                        this.Log().Info("Move item " + ld.FullName + "to " + target.FullName);
-            
-                        ld.GetDirectories()
-                           .ForEachAsync(subdir => {
-                               this.Log().Info("Move subdir " + subdir.FullName + " to " + subdir.FullName.Replace(ld.FullName, target.FullName));                            
-                               Boolean moved = false;
-                               Int16 trials = 0;
-                               do
-                               {
-                                   try
-                                   {
-                                       trials ++;
-                                       subdir.MoveTo(subdir.FullName.Replace(ld.FullName, target.FullName));
-                                       moved = true;
-                                   }
-                                   catch (System.IO.IOException e)
-                                   {
-                                       this.Log().Info("Source subdir could not be moved, trial {0}", trials);
-                                       System.Threading.Thread.Sleep(2000);
-                                   }
-                               } while (!moved && trials < 8);
-                               if (!moved) {
-                                   this.Log().Error("Could not move directory " + subdir.FullName);
-                                   throw new System.IO.IOException("Could not move folder to final destination");
-                               }
-                           })
-                           .Wait();
-
-                        ld.GetFiles()
-                           .ForEachAsync(file => {
-                               var tgt = Path.Combine(target.FullName, file.Name);
-                               this.Log().Info("Moving file {0} to {1}", file.FullName, tgt);
-                               if (File.Exists(tgt)) Utility.DeleteFileHarder(tgt, true);
-                               Boolean moved = false;
-                               Int16 trials = 0;
-                               do
-                               {
-                                   try
-                                   {
-                                       trials ++;
-                                       file.MoveTo(tgt);
-                                       moved = true;
-                                   }
-                                   catch (System.IO.IOException e)
-                                   {
-                                       this.Log().Info("Source file could not be moved, trial {0}", trials);
-                                       System.Threading.Thread.Sleep(2000);
-                                   }
-                               } while (!moved && trials < 8);
-                               if (!moved) {
-                                   this.Log().Error("Could not move file " + file.FullName);
-                                   throw new System.IO.IOException("Could not move file to final destination");
-                               }
-                              
-                           })
-                           .Wait();
-                    });
-
-                    await Utility.DeleteDirectory(libDir.FullName);
                     return target.FullName;
                 });
             }
