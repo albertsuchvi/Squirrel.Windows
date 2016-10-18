@@ -144,6 +144,7 @@ namespace Squirrel
 
             UpdateInfo determineUpdateInfo(IEnumerable<ReleaseEntry> localReleases, IEnumerable<ReleaseEntry> remoteReleases, bool ignoreDeltaUpdates)
             {
+                this.Log().Info("Determining update info");
                 var packageDirectory = Utility.PackageDirectoryForAppDir(rootAppDirectory);
                 localReleases = localReleases ?? Enumerable.Empty<ReleaseEntry>();
 
@@ -155,7 +156,10 @@ namespace Squirrel
                 var latestFullRelease = Utility.FindCurrentVersion(remoteReleases);
                 var currentRelease = Utility.FindCurrentVersion(localReleases);
                 this.Log().Info("Latest full release      : " + latestFullRelease.Version.ToString());
-                this.Log().Info("Current installed release: " + currentRelease.Version.ToString());
+                if (currentRelease != null)
+                {
+                    this.Log().Info("Current installed release: " + currentRelease.Version.ToString());
+                }
 
                 if (latestFullRelease == currentRelease) {
                     this.Log().Info("No updates, remote and local are the same");
