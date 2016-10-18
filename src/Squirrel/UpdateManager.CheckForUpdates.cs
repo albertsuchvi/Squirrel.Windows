@@ -155,7 +155,9 @@ namespace Squirrel
 
                 var latestFullRelease = Utility.FindCurrentVersion(remoteReleases);
                 var currentRelease = Utility.FindCurrentVersion(localReleases);
-                this.Log().Info("Latest full release      : " + latestFullRelease.Version.ToString());
+                if (latestFullRelease != null) {
+                    this.Log().Info("Latest full release      : " + latestFullRelease.Version.ToString());
+                }
                 if (currentRelease != null)
                 {
                     this.Log().Info("Current installed release: " + currentRelease.Version.ToString());
